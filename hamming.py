@@ -54,7 +54,8 @@ def AnalyseString(Istring, MS_LS, GM, HM, RM, ErrorFraction):
     for element in Istring:
         Nnibbles=Nnibbles+1
         asci=(ord(element)) >> MS_LS
-#encode
+       
+#encode 
         xM=NibbleTo2DbitArray(asci)
         x=BinaryMatrix(xM)
         y=G*x
@@ -63,7 +64,8 @@ def AnalyseString(Istring, MS_LS, GM, HM, RM, ErrorFraction):
         for n in range(y.Nrow):
             sum1=sum1+y.M[n][0]*2**n
         yLSstring=yLSstring+f"{sum1:02x}"[1]
-        yMSstring=yMSstring+f"{sum1:02x}"[0]
+        yMSstring=yMSstring+f"{sum1:02x}"[0]   
+        
 #Introduce random Errors in data with parity
         ErrorVector=random.choices([1, 0], weights=[ErrorFraction, 1-ErrorFraction], k=len(y.M))
         NumberOfErrors=ErrorVector.count(1)
@@ -76,7 +78,21 @@ def AnalyseString(Istring, MS_LS, GM, HM, RM, ErrorFraction):
         yError =Error+y
 #Error detect
         ErrorDetect=H*yError
-        ErrorDetectString=ErrorDetectString+str(ErrorDetect.M[0][0])
+        print (ErrorDetect.M)
+        sum1=0
+        for n in range(ErrorDetect.Nrow):
+            sum1=sum1+ErrorDetect.M[n][0]*2**n
+        print (sum1)
+        ErrorDetectString=ErrorDetectString+str(sum1)
+#errorcorrect for hamming [7,4]
+        if sum1!=0 and H.Ncol == 7:
+           toggleM=[[0] for j in range(H.Ncol)]
+           
+           toggleM[sum1-1][0] = 1
+           toggle=BinaryMatrix(toggleM)
+           yError = toggle+yError
+           print (toggleM)
+           print (ErrorM)
 #Decode
         yDecode=R*yError
         if ((yDecode.M!=xM and ErrorDetect.M[0][0]==0) or (yDecode.M==xM and ErrorDetect.M[0][0]!=0) ):
@@ -111,11 +127,52 @@ RparM= [[1, 0, 0, 0, 0],
 [0, 0, 1, 0, 0],
 [0, 0, 0, 1, 0]]
 
+GHam74 = [[1, 0, 0, 0],
+          [0, 1, 0, 0],
+          [0, 0, 1, 0],
+          [0, 0, 0, 1],
+          [0, 1, 1, 1],
+          [1, 0, 1, 1],
+          [1, 1, 0, 1]]
+
+HHam74  = [[1, 0, 1, 0, 1, 0, 1],
+           [0, 1, 1, 0, 0, 1, 1],
+           [0, 0, 0, 1, 1, 1, 1]] 
+
+RHam74  =  [[1, 0, 0, 0, 0, 0, 0],
+           [0, 1, 0, 0, 0, 0, 0],
+           [0, 0, 1, 0, 0, 0, 0],
+           [0, 0, 0, 1, 0, 0, 0]]
+
+GHam84 = [[1, 1, 0, 1],
+          [1, 0, 1, 1],
+          [1, 0, 0, 0],
+          [0, 1, 1, 1],
+          [0, 1, 0, 0],
+          [0, 0, 1, 0],
+          [0, 0, 0, 1],
+          [1, 1, 1, 0]]
+
+HHam84  = [[1, 0, 1, 0, 1, 0, 1, 0],
+           [0, 1, 1, 0, 0, 1, 1, 0],
+           [0, 0, 0, 1, 1, 1, 1, 0],
+           [1, 1, 1, 1, 1, 1, 1, 1]] 
+
+RHam84  = [[1, 0, 0, 0, 0, 0, 0, 0],
+           [0, 1, 0, 0, 0, 0, 0, 0],
+           [0, 0, 1, 0, 0, 0, 0, 0],
+           [0, 0, 0, 1, 0, 0, 0, 0]]
+
+
 ErrorFraction = float(input('Give fraction of bit errors (number between 0 and 1)'))
 Istring = input('Text :')
 print('parity')
 AnalyseString(Istring, 0, GparM, HparM, RparM, ErrorFraction)
 AnalyseString(Istring,  4, GparM, HparM, RparM, ErrorFraction)
 print('hamming7_4')
-
+AnalyseString(Istring, 0, GHam74, HHam74, RHam74, ErrorFraction)
+AnalyseString(Istring,  4, GHam74, HHam74, RHam74, ErrorFraction)
 print('hamming8_4')
+AnalyseString(Istring, 0, GHam84, HHam84, RHam84, ErrorFraction)
+AnalyseString(Istring,  4, GHam84, HHam84, RHam84, ErrorFraction)
+
