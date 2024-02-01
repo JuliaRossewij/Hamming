@@ -42,7 +42,7 @@ def AnalyseString(Istring, MS_LS, GM, HM, RM, ErrorFraction):
     yLSstring=""
     yMSstring=""
     Errstring=""
-    ErrorDetectString=""
+    errorSyndromeString=""
     DetectOkSting=""
     DataCorrectString=""
 
@@ -77,25 +77,44 @@ def AnalyseString(Istring, MS_LS, GM, HM, RM, ErrorFraction):
         Error=BinaryMatrix(ErrorM)
         yError =Error+y
 #Error detect
-        ErrorDetect=H*yError
-        print (ErrorDetect.M)
-        sum1=0
-        for n in range(ErrorDetect.Nrow):
-            sum1=sum1+ErrorDetect.M[n][0]*2**n
-        print (sum1)
-        ErrorDetectString=ErrorDetectString+str(sum1)
+        errorSyndrome=H*yError
+        print (errorSyndrome.M)
+        SyndromeValue=0
+        for n in range(errorSyndrome.Nrow):
+            SyndromeValue=SyndromeValue+errorSyndrome.M[n][0]*2**n
+        print (SyndromeValue)
+        errorSyndromeString=errorSyndromeString+str(SyndromeValue)
 #errorcorrect for hamming [7,4]
-        if sum1!=0 and H.Ncol == 7:
+        if SyndromeValue!=0 and H.Ncol == 7:
            toggleM=[[0] for j in range(H.Ncol)]
-           
-           toggleM[sum1-1][0] = 1
+           toggleM[SyndromeValue-1][0] = 1
            toggle=BinaryMatrix(toggleM)
            yError = toggle+yError
            print (toggleM)
            print (ErrorM)
+#errorcorrect for hamming [8,4]
+        if SyndromeValue>7 and H.Ncol == 8:   #parity error (single bit errors)
+           SyndromeValue = SyndromeValue-8
+           print (ErrorM)
+           toggleM=[[0] for j in range(H.Ncol)]
+           toggleM[SyndromeValue-1][0] = 1
+           toggle=BinaryMatrix(toggleM)
+           yError = toggle+yError
+           print (toggleM)
+        elif SyndromeValue>1 and H.Ncol == 8:   #parity error (double (or more) bit errors)
+           print (f"{ErrorM} double")
+           toggleM=[[0] for j in range(H.Ncol)]
+           toggleM[SyndromeValue-1][0] = 1
+           toggle=BinaryMatrix(toggleM)
+           yError = toggle+yError
+           print (toggleM)
+        
 #Decode
         yDecode=R*yError
-        if ((yDecode.M!=xM and ErrorDetect.M[0][0]==0) or (yDecode.M==xM and ErrorDetect.M[0][0]!=0) ):
+        print(x.M)
+        print(yDecode.M)
+#evaluate
+        if ((yDecode.M!=xM and SyndromeValue==0) or (yDecode.M==xM and SyndromeValue!=0) ):
                 DetectOkSting=DetectOkSting+'X'
                 NwrongDetects=NwrongDetects+1
         else:
@@ -109,7 +128,7 @@ def AnalyseString(Istring, MS_LS, GM, HM, RM, ErrorFraction):
     print('yLS  ', yLSstring)
     print('yMS  ', yMSstring)
     print('#Err ', Errstring,' = ',f"{(100*NflippedBits/TotalNbits):.3g}",'%')
-    print('ErDet', ErrorDetectString)
+    print('ErDet', errorSyndromeString)
     print('DetOk', DetectOkSting,' = ',f"{(100*NwrongDetects/Nnibbles):.3g}",'%')
     print('DatOk', DataCorrectString,' = ',f"{(100*NwrongReceived/Nnibbles):.3g}",'%')
     return
@@ -158,11 +177,10 @@ HHam84  = [[1, 0, 1, 0, 1, 0, 1, 0],
            [0, 0, 0, 1, 1, 1, 1, 0],
            [1, 1, 1, 1, 1, 1, 1, 1]] 
 
-RHam84  = [[1, 0, 0, 0, 0, 0, 0, 0],
-           [0, 1, 0, 0, 0, 0, 0, 0],
-           [0, 0, 1, 0, 0, 0, 0, 0],
-           [0, 0, 0, 1, 0, 0, 0, 0]]
-
+RHam84  = [[0, 0, 1, 0, 0, 0, 0, 0],
+           [0, 0, 0, 0, 1, 0, 0, 0],
+           [0, 0, 0, 0, 0, 1, 0, 0],
+           [0, 0, 0, 0, 0, 0, 1, 0]]
 
 ErrorFraction = float(input('Give fraction of bit errors (number between 0 and 1)'))
 Istring = input('Text :')
@@ -170,7 +188,7 @@ print('parity')
 AnalyseString(Istring, 0, GparM, HparM, RparM, ErrorFraction)
 AnalyseString(Istring,  4, GparM, HparM, RparM, ErrorFraction)
 print('hamming7_4')
-AnalyseString(Istring, 0, GHam74, HHam74, RHam74, ErrorFraction)
+AnalyseString(Istring, 0, GHam74,HHam74 , RHam74, ErrorFraction)
 AnalyseString(Istring,  4, GHam74, HHam74, RHam74, ErrorFraction)
 print('hamming8_4')
 AnalyseString(Istring, 0, GHam84, HHam84, RHam84, ErrorFraction)
