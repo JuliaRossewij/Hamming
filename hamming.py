@@ -236,8 +236,9 @@ def AnalyseStringLUTHamming84(Istring, MS_LS, GM, HM, RM, ErrorFraction):
            toggle=BinaryMatrix(toggleM)
            yError = toggle+yError                  
 #Decode
-        yDecode=R*yError
+#        yDecode=R*yError
         yDecodeM=Rlut[bitArray2Value(yError)]
+        yDecode=BinaryMatrix(yDecodeM)
         CorrectedDataString=CorrectedDataString+hex(bitArray2Value(yDecode))[2]
 #        print(xM)
 #        print(yDecode.M)
