@@ -70,6 +70,7 @@ def AnalyseString(Istring, MS_LS, GM, HM, RM, ErrorFraction):
     Nnibbles=0
     NwrongDetects=0
     NwrongReceived=0
+    sumSingelOperations=0
     start = default_timer()
     for element in Istring:
         Nnibbles=Nnibbles+1
@@ -78,7 +79,9 @@ def AnalyseString(Istring, MS_LS, GM, HM, RM, ErrorFraction):
 #encode 
         xM=NibbleTo2DbitArray(asci)
         x=BinaryMatrix(xM)
+        startSingleOperation = default_timer()
         y=G*x
+        sumSingelOperations = sumSingelOperations + default_timer()-startSingleOperation  
 #print encoded data
         sum1=bitArray2Value(y)
 #        sum1=0
@@ -98,7 +101,9 @@ def AnalyseString(Istring, MS_LS, GM, HM, RM, ErrorFraction):
         Error=BinaryMatrix(ErrorM)
         yError =Error+y
 #Error detect
+        startSingleOperation = default_timer()
         errorSyndrome=H*yError
+        sumSingelOperations = sumSingelOperations + default_timer()-startSingleOperation 
         SyndromeValue=bitArray2Value(errorSyndrome)
 #        SyndromeValue=0
 #        for n in range(errorSyndrome.Nrow):
@@ -123,7 +128,9 @@ def AnalyseString(Istring, MS_LS, GM, HM, RM, ErrorFraction):
            toggle=BinaryMatrix(toggleM)
            yError = toggle+yError                  
 #Decode
+        startSingleOperation = default_timer()
         yDecode=R*yError
+        sumSingelOperations = sumSingelOperations + default_timer()-startSingleOperation 
         CorrectedDataString=CorrectedDataString+hex(bitArray2Value(yDecode))[2]
 #        print(x.M)
 #        print(yDecode.M)
@@ -146,7 +153,7 @@ def AnalyseString(Istring, MS_LS, GM, HM, RM, ErrorFraction):
     print('DetOk', DetectOkSting,' = ',f"{(100*NwrongDetects/Nnibbles):.3g}",'%')
     print('ycorr', CorrectedDataString)
     print('DatOk', DataCorrectString,' = ',f"{(100-100*NwrongReceived/Nnibbles):.3g}",'%')
-    print('Time=', duration)
+    print('TotalTime=', duration, "the matrix operations = ", sumSingelOperations)
     return
 
 #This function was added only to measure the time gain with lookup tables (LUTs) for hamming84. Is not tested for other cdong schemes
@@ -185,12 +192,15 @@ def AnalyseStringLUTHamming84(Istring, MS_LS, GM, HM, RM, ErrorFraction):
     Nnibbles=0
     NwrongDetects=0
     NwrongReceived=0
+    sumSingelOperations = 0
     start = default_timer()
     for element in Istring:
         Nnibbles=Nnibbles+1
         asci=(ord(element)) >> MS_LS
 #encode 
+        startSingleOperation = default_timer()
         xM=NibbleTo2DbitArray(asci)
+        sumSingelOperations = sumSingelOperations + default_timer()-startSingleOperation
  #       x=BinaryMatrix(xM)
  #       y=G*x
  #       print(y.M)
@@ -214,7 +224,9 @@ def AnalyseStringLUTHamming84(Istring, MS_LS, GM, HM, RM, ErrorFraction):
 #        errorSyndrome=H*yError
 #        SyndromeValue=bitArray2Value(errorSyndrome)
 #        print(SyndromeValue)
+        startSingleOperation = default_timer()
         SyndromeValue=Hlut[bitArray2Value(yError)]
+        sumSingelOperations = sumSingelOperations + default_timer()-startSingleOperation
 #        print(Hlut[bitArray2Value(yError)])
         errorSyndromeString=errorSyndromeString+hex(SyndromeValue)[2]
 #errorcorrect for hamming [7,4]
@@ -237,7 +249,9 @@ def AnalyseStringLUTHamming84(Istring, MS_LS, GM, HM, RM, ErrorFraction):
            yError = toggle+yError                  
 #Decode
 #        yDecode=R*yError
+        startSingleOperation = default_timer()
         yDecodeM=Rlut[bitArray2Value(yError)]
+        sumSingelOperations = sumSingelOperations + default_timer()-startSingleOperation
         yDecode=BinaryMatrix(yDecodeM)
         CorrectedDataString=CorrectedDataString+hex(bitArray2Value(yDecode))[2]
 #        print(xM)
@@ -262,7 +276,7 @@ def AnalyseStringLUTHamming84(Istring, MS_LS, GM, HM, RM, ErrorFraction):
     print('DetOk', DetectOkSting,' = ',f"{(100*NwrongDetects/Nnibbles):.3g}",'%')
     print('ycorr', CorrectedDataString)
     print('DatOk', DataCorrectString,' = ',f"{(100-100*NwrongReceived/Nnibbles):.3g}",'%')
-    print('Time=', duration)
+    print('TotalTime=', duration, "the lut operations = ", sumSingelOperations)
     return
 
 GparM= [[1, 0, 0, 0],
