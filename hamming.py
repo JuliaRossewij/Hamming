@@ -2,7 +2,7 @@ import random
 from re import X
 from timeit import default_timer
 
-# Class for (only 2D) binary Matrix with operator overloading for addition and multiply
+# Class for (only 2D) binary Matrix with operator overloading for addition and multiplying 
 class BinaryMatrix:
     def __init__(self, M):
         self.Nrow=len(M)
@@ -28,6 +28,7 @@ class BinaryMatrix:
                 mat[i][j] = mat[i][j] % 2 
         return BinaryMatrix(mat)
 
+#  
 def NibbleTo2DbitArray(nible):
     M=[]
     for i in range(4):
@@ -36,6 +37,7 @@ def NibbleTo2DbitArray(nible):
         nible=nible>>1
     return M
 
+#
 def ByteTo2DbitArray(byte):
     M=[]
     for i in range(8):
@@ -44,14 +46,14 @@ def ByteTo2DbitArray(byte):
         byte=byte>>1
     return M
 
-
+#
 def bitArray2Value(y):
     sum1=0
     for n in range(y.Nrow):
         sum1=sum1+y.M[n][0]*2**n
     return sum1
 
-
+#   
 def AnalyseString(Istring, MS_LS, GM, HM, RM, ErrorFraction):
     G=BinaryMatrix(GM)
     H=BinaryMatrix(HM)
@@ -84,9 +86,6 @@ def AnalyseString(Istring, MS_LS, GM, HM, RM, ErrorFraction):
         sumSingelOperations = sumSingelOperations + default_timer()-startSingleOperation  
 #print encoded data
         sum1=bitArray2Value(y)
-#        sum1=0
-#        for n in range(y.Nrow):
-#            sum1=sum1+y.M[n][0]*2**n
         yLSstring=yLSstring+f"{sum1:02x}"[1]
         yMSstring=yMSstring+f"{sum1:02x}"[0]   
         
@@ -105,9 +104,6 @@ def AnalyseString(Istring, MS_LS, GM, HM, RM, ErrorFraction):
         errorSyndrome=H*yError
         sumSingelOperations = sumSingelOperations + default_timer()-startSingleOperation 
         SyndromeValue=bitArray2Value(errorSyndrome)
-#        SyndromeValue=0
-#        for n in range(errorSyndrome.Nrow):
-#            SyndromeValue=SyndromeValue+errorSyndrome.M[n][0]*2**n
         errorSyndromeString=errorSyndromeString+hex(SyndromeValue)[2]
 #errorcorrect for hamming [7,4]
         if SyndromeValue!=0 and H.Ncol == 7:
@@ -127,13 +123,12 @@ def AnalyseString(Istring, MS_LS, GM, HM, RM, ErrorFraction):
            toggleM[SyndromeValue-1][0] = 1
            toggle=BinaryMatrix(toggleM)
            yError = toggle+yError                  
-#Decode
+#Decode and 
         startSingleOperation = default_timer()
         yDecode=R*yError
         sumSingelOperations = sumSingelOperations + default_timer()-startSingleOperation 
         CorrectedDataString=CorrectedDataString+hex(bitArray2Value(yDecode))[2]
-#        print(x.M)
-#        print(yDecode.M)
+
 #evaluate
         if ((yDecode.M!=xM and SyndromeValue==0) or (yDecode.M==xM and SyndromeValue!=0) ):
                 DetectOkSting=DetectOkSting+'X'
@@ -154,7 +149,7 @@ def AnalyseString(Istring, MS_LS, GM, HM, RM, ErrorFraction):
     print('ycorr', CorrectedDataString)
     print('DatOk', DataCorrectString,' = ',f"{(100-100*NwrongReceived/Nnibbles):.3g}",'%')
     print('TotalTime=', duration, "the matrix operations = ", sumSingelOperations)
-    return
+    return duration, sumSingelOperations
 
 #This function was added only to measure the time gain with lookup tables (LUTs) for hamming84. Is not tested for other cdong schemes
 def AnalyseStringLUTHamming84(Istring, MS_LS, GM, HM, RM, ErrorFraction):
@@ -201,16 +196,13 @@ def AnalyseStringLUTHamming84(Istring, MS_LS, GM, HM, RM, ErrorFraction):
         startSingleOperation = default_timer()
         xM=NibbleTo2DbitArray(asci)
         sumSingelOperations = sumSingelOperations + default_timer()-startSingleOperation
- #       x=BinaryMatrix(xM)
- #       y=G*x
- #       print(y.M)
- #       print(Glut[asci&0xF])
         y=BinaryMatrix(Glut[asci&0xF])
 #print encoded data
         sum1=bitArray2Value(y)
         yLSstring=yLSstring+f"{sum1:02x}"[1]
         yMSstring=yMSstring+f"{sum1:02x}"[0]          
-#Introduce random Errors in data with parity
+#Introduce random Errors in data with parity. Counts the number of errors and total number of flipped bits. 
+#Adds the errors to the y matrix
         ErrorVector=random.choices([1, 0], weights=[ErrorFraction, 1-ErrorFraction], k=len(y.M))
         NumberOfErrors=ErrorVector.count(1)
         NflippedBits=NflippedBits+NumberOfErrors
@@ -221,13 +213,9 @@ def AnalyseStringLUTHamming84(Istring, MS_LS, GM, HM, RM, ErrorFraction):
         Error=BinaryMatrix(ErrorM)
         yError =Error+y
 #Error detect
-#        errorSyndrome=H*yError
-#        SyndromeValue=bitArray2Value(errorSyndrome)
-#        print(SyndromeValue)
         startSingleOperation = default_timer()
         SyndromeValue=Hlut[bitArray2Value(yError)]
         sumSingelOperations = sumSingelOperations + default_timer()-startSingleOperation
-#        print(Hlut[bitArray2Value(yError)])
         errorSyndromeString=errorSyndromeString+hex(SyndromeValue)[2]
 #errorcorrect for hamming [7,4]
         if SyndromeValue!=0 and H.Ncol == 7:
@@ -248,15 +236,12 @@ def AnalyseStringLUTHamming84(Istring, MS_LS, GM, HM, RM, ErrorFraction):
            toggle=BinaryMatrix(toggleM)
            yError = toggle+yError                  
 #Decode
-#        yDecode=R*yError
         startSingleOperation = default_timer()
         yDecodeM=Rlut[bitArray2Value(yError)]
         sumSingelOperations = sumSingelOperations + default_timer()-startSingleOperation
         yDecode=BinaryMatrix(yDecodeM)
         CorrectedDataString=CorrectedDataString+hex(bitArray2Value(yDecode))[2]
-#        print(xM)
-#        print(yDecode.M)
-#        print(yDecodeM)
+
 #evaluate
         if ((yDecode.M!=xM and SyndromeValue==0) or (yDecode.M==xM and SyndromeValue!=0) ):
                 DetectOkSting=DetectOkSting+'X'
@@ -277,7 +262,7 @@ def AnalyseStringLUTHamming84(Istring, MS_LS, GM, HM, RM, ErrorFraction):
     print('ycorr', CorrectedDataString)
     print('DatOk', DataCorrectString,' = ',f"{(100-100*NwrongReceived/Nnibbles):.3g}",'%')
     print('TotalTime=', duration, "the lut operations = ", sumSingelOperations)
-    return
+    return duration, sumSingelOperations
 
 GparM= [[1, 0, 0, 0],
 [0, 1, 0, 0],
@@ -337,7 +322,8 @@ print('hamming7_4')
 AnalyseString(Istring, 0, GHam74,HHam74 , RHam74, ErrorFraction)
 #AnalyseString(Istring,  4, GHam74, HHam74, RHam74, ErrorFraction)
 print('hamming8_4')
-AnalyseString(Istring, 0, GHam84, HHam84, RHam84, ErrorFraction)
+MatrixOverall, MatrixOnly = AnalyseString(Istring, 0, GHam84, HHam84, RHam84, ErrorFraction)
 #AnalyseString(Istring,  4, GHam84, HHam84, RHam84, ErrorFraction)
 print('hamming8_4 with lookup tables')
-AnalyseStringLUTHamming84(Istring, 0, GHam84, HHam84, RHam84, ErrorFraction)
+LUToverall, LUTonly =AnalyseStringLUTHamming84(Istring, 0, GHam84, HHam84, RHam84, ErrorFraction)
+print("Total execution time LUT compared to matrix=", round(100*LUToverall/MatrixOverall,1), "%. Execution time LUT compared to matrix operations only=", round (100*LUTonly/MatrixOnly,1),"%.")
