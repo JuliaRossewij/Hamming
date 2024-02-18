@@ -1,4 +1,7 @@
 import random
+import string
+import numpy
+import matplotlib.pyplot as plt
 from re import X
 from timeit import default_timer
 
@@ -331,16 +334,58 @@ RHam84  = [[0, 0, 1, 0, 0, 0, 0, 0],
 # Start of the main programm
 
 ErrorFraction = float(input('Give fraction of bit errors (number between 0 and 1)'))
-Istring = input('Text :')
-print('parity')
-AnalyseString(Istring, 0, GparM, HparM, RparM, ErrorFraction)
-#AnalyseString(Istring,  4, GparM, HparM, RparM, ErrorFraction)
-print('hamming7_4')
-AnalyseString(Istring, 0, GHam74,HHam74 , RHam74, ErrorFraction)
-#AnalyseString(Istring,  4, GHam74, HHam74, RHam74, ErrorFraction)
-print('hamming8_4')
-MatrixOverall, MatrixOnly = AnalyseString(Istring, 0, GHam84, HHam84, RHam84, ErrorFraction)
-#AnalyseString(Istring,  4, GHam84, HHam84, RHam84, ErrorFraction)
-print('hamming8_4 with lookup tables')
-LUToverall, LUTonly =AnalyseStringLUTHamming84(Istring, 0, GHam84, HHam84, RHam84, ErrorFraction)
-print("Total execution time LUT compared to matrix=", round(100*LUToverall/MatrixOverall,1), "%. Execution time LUT compared to matrix operations only=", round (100*LUTonly/MatrixOnly,1),"%.")
+x_axis=[]
+LUToverallAVG=[]
+LUToverallSTD=[]
+MatrixOverallAVG=[]
+MatrixOverallSTD=[]
+LUTonlyAVG=[]
+LUTonlySTD=[]
+MatrixOnlyAVG=[]
+MatrixOnlySTD=[]
+ratioLUTmatrixOverall=[]
+ratioLUTmatrixOnly=[]
+for n in range(1, 200, 10):
+    Istring = "".join(random.choice(string.ascii_lowercase) for i in range(n))
+    print(Istring)
+    LUToverallList=[]
+    MatrixOverallList=[]
+    LUTonlyList=[]
+    MatrixOnlyList=[]
+    for x in range(100):
+        MatrixOverall, MatrixOnly = AnalyseString(Istring, 0, GHam84, HHam84, RHam84, ErrorFraction)
+        LUToverall, LUTonly =AnalyseStringLUTHamming84(Istring, 0, GHam84, HHam84, RHam84, ErrorFraction)
+        LUToverallList.append(LUToverall)
+        MatrixOverallList.append(MatrixOverall)    
+        LUTonlyList.append(LUTonly)
+        MatrixOnlyList.append(MatrixOnly)    
+    x_axis.append(n)
+    LUToverallAVG.append(numpy.average(LUToverallList))
+    LUToverallSTD.append(numpy.std(    LUToverallList))
+    MatrixOverallAVG.append(numpy.average(MatrixOverallList))
+    MatrixOverallSTD.append(numpy.std(    MatrixOverallList))
+    LUTonlyAVG.append(numpy.average(LUTonlyList))
+    LUTonlySTD.append(numpy.std(    LUTonlyList))
+    MatrixOnlyAVG.append(numpy.average(MatrixOnlyList))
+    MatrixOnlySTD.append(numpy.std(    MatrixOnlyList))
+    ratioLUTmatrixOverall.append(100*numpy.average(LUToverallList)/numpy.average(MatrixOverallList))
+    ratioLUTmatrixOnly.append(   100*numpy.average(LUTonlyList   )/numpy.average(MatrixOnlyList   ))
+
+
+plt.errorbar(x_axis, MatrixOverallAVG, yerr=MatrixOverallSTD, label="Matrix overall")
+plt.errorbar(x_axis, MatrixOnlyAVG   , yerr=MatrixOnlySTD   , label="Matrix only")
+plt.errorbar(x_axis, LUToverallAVG   , yerr=LUToverallSTD   , label="LUT overall")
+plt.errorbar(x_axis, LUTonlyAVG      , yerr=LUTonlySTD      , label="LUT only")
+plt.xlabel("StringSize (=number of nibbles sent)")
+plt.ylabel("ExecutionTime (s)")
+plt.legend(loc="upper left")    
+plt.show()
+
+plt.plot(x_axis, ratioLUTmatrixOverall, label="ratio overall Execution time LUT / matrix ")
+plt.plot(x_axis, ratioLUTmatrixOnly   , label="ratio Execution time LUT / matrix (calculation only)")
+plt.xlabel("StringSize (=number of nibbles sent)")
+plt.ylabel("ratio (%)")
+plt.legend(loc='center')
+plt.ylim((0,80))
+plt.grid(True)
+plt.show()
