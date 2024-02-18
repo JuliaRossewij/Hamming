@@ -2,7 +2,7 @@ import random
 from re import X
 from timeit import default_timer
 
-# Class for (only 2D) binary Matrix with operator overloading for addition and multiplying 
+# Class for (only 2D) binary Matrix with operator overloading for addition and multiplying with another Matrix 
 class BinaryMatrix:
     def __init__(self, M):
         self.Nrow=len(M)
@@ -28,7 +28,7 @@ class BinaryMatrix:
                 mat[i][j] = mat[i][j] % 2 
         return BinaryMatrix(mat)
 
-#  
+# This function turns a nibble (least significant or most significant bit set) in a list representation
 def NibbleTo2DbitArray(nible):
     M=[]
     for i in range(4):
@@ -37,7 +37,7 @@ def NibbleTo2DbitArray(nible):
         nible=nible>>1
     return M
 
-#
+# This function turns a byte in a list representation
 def ByteTo2DbitArray(byte):
     M=[]
     for i in range(8):
@@ -46,14 +46,16 @@ def ByteTo2DbitArray(byte):
         byte=byte>>1
     return M
 
-#
+# This function takes a Binary Matrix object as input. 
+# It can only be used when it is a vector object.
+# and converts the vector into a Value and returns this.
 def bitArray2Value(y):
     sum1=0
     for n in range(y.Nrow):
         sum1=sum1+y.M[n][0]*2**n
     return sum1
 
-#   
+   
 def AnalyseString(Istring, MS_LS, GM, HM, RM, ErrorFraction):
     G=BinaryMatrix(GM)
     H=BinaryMatrix(HM)
@@ -73,12 +75,16 @@ def AnalyseString(Istring, MS_LS, GM, HM, RM, ErrorFraction):
     NwrongDetects=0
     NwrongReceived=0
     sumSingelOperations=0
+
+    # Start timing total time
+    # Select most significant or least significant nibble depending on value ML_LS
     start = default_timer()
     for element in Istring:
         Nnibbles=Nnibbles+1
         asci=(ord(element)) >> MS_LS
-       
-#encode 
+        
+# encode by matrix multiplication with generator matrix
+# time the process of encoding the matrix
         xM=NibbleTo2DbitArray(asci)
         x=BinaryMatrix(xM)
         startSingleOperation = default_timer()
@@ -89,7 +95,8 @@ def AnalyseString(Istring, MS_LS, GM, HM, RM, ErrorFraction):
         yLSstring=yLSstring+f"{sum1:02x}"[1]
         yMSstring=yMSstring+f"{sum1:02x}"[0]   
         
-#Introduce random Errors in data with parity
+# Introduce random Errors in data with parity
+# by adding the error vector to the original parity/Hamming code
         ErrorVector=random.choices([1, 0], weights=[ErrorFraction, 1-ErrorFraction], k=len(y.M))
         NumberOfErrors=ErrorVector.count(1)
         NflippedBits=NflippedBits+NumberOfErrors
@@ -100,12 +107,15 @@ def AnalyseString(Istring, MS_LS, GM, HM, RM, ErrorFraction):
         Error=BinaryMatrix(ErrorM)
         yError =Error+y
 #Error detect
+# start timing the process of the multiplication of y with the parity check matrix
+# Calculate the SyndromeValue which denotes the place of the inverted bit
         startSingleOperation = default_timer()
         errorSyndrome=H*yError
         sumSingelOperations = sumSingelOperations + default_timer()-startSingleOperation 
         SyndromeValue=bitArray2Value(errorSyndrome)
         errorSyndromeString=errorSyndromeString+hex(SyndromeValue)[2]
 #errorcorrect for hamming [7,4]
+# adds a vector with 1 at the place of the denoted error to the Hammingcode
         if SyndromeValue!=0 and H.Ncol == 7:
            toggleM=[[0] for j in range(H.Ncol)]
            toggleM[SyndromeValue-1][0] = 1
@@ -123,13 +133,18 @@ def AnalyseString(Istring, MS_LS, GM, HM, RM, ErrorFraction):
            toggleM[SyndromeValue-1][0] = 1
            toggle=BinaryMatrix(toggleM)
            yError = toggle+yError                  
-#Decode and 
+#  Time decoding process
+#  Decode with matrix multiplication of the decoding matrix R
+#  Print the string with the corrected data
         startSingleOperation = default_timer()
         yDecode=R*yError
         sumSingelOperations = sumSingelOperations + default_timer()-startSingleOperation 
         CorrectedDataString=CorrectedDataString+hex(bitArray2Value(yDecode))[2]
 
 #evaluate
+# Evaluate performance of error detection and correction
+# by comparing original Hammingcode and received hammingcode and SyndromeValue
+# print the total time and the joined time of the matrix multiplications
         if ((yDecode.M!=xM and SyndromeValue==0) or (yDecode.M==xM and SyndromeValue!=0) ):
                 DetectOkSting=DetectOkSting+'X'
                 NwrongDetects=NwrongDetects+1
@@ -156,7 +171,7 @@ def AnalyseStringLUTHamming84(Istring, MS_LS, GM, HM, RM, ErrorFraction):
     G=BinaryMatrix(GM)
     H=BinaryMatrix(HM)
     R=BinaryMatrix(RM)
-
+    # G,H and R LUTS are generated
     Glut = []
     for nible in range(0, 16):
         xM=NibbleTo2DbitArray(nible)
@@ -201,8 +216,7 @@ def AnalyseStringLUTHamming84(Istring, MS_LS, GM, HM, RM, ErrorFraction):
         sum1=bitArray2Value(y)
         yLSstring=yLSstring+f"{sum1:02x}"[1]
         yMSstring=yMSstring+f"{sum1:02x}"[0]          
-#Introduce random Errors in data with parity. Counts the number of errors and total number of flipped bits. 
-#Adds the errors to the y matrix
+#Introduce random Errors in data with parity. 
         ErrorVector=random.choices([1, 0], weights=[ErrorFraction, 1-ErrorFraction], k=len(y.M))
         NumberOfErrors=ErrorVector.count(1)
         NflippedBits=NflippedBits+NumberOfErrors
@@ -264,6 +278,7 @@ def AnalyseStringLUTHamming84(Istring, MS_LS, GM, HM, RM, ErrorFraction):
     print('TotalTime=', duration, "the lut operations = ", sumSingelOperations)
     return duration, sumSingelOperations
 
+# the defenitions of the G, H and R matrices for parity and Hamming
 GparM= [[1, 0, 0, 0],
 [0, 1, 0, 0],
 [0, 0, 1, 0],
@@ -312,6 +327,8 @@ RHam84  = [[0, 0, 1, 0, 0, 0, 0, 0],
            [0, 0, 0, 0, 1, 0, 0, 0],
            [0, 0, 0, 0, 0, 1, 0, 0],
            [0, 0, 0, 0, 0, 0, 1, 0]]
+
+# Start of the main programm
 
 ErrorFraction = float(input('Give fraction of bit errors (number between 0 and 1)'))
 Istring = input('Text :')
